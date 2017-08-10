@@ -4,41 +4,131 @@
   xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
   xmlns="http://schemas.microsoft.com/online/cpim/schemas/2013/06" 
   PolicySchemaVersion="0.3.0.0" 
-  TenantId="yourtenant.onmicrosoft.com" 
+  TenantId="ebenefitsdev.onmicrosoft.com" 
   PolicyId="B2C_1A_TrustFrameworkExtensions" 
-  PublicPolicyUri="http://yourtenant.onmicrosoft.com/B2C_1A_TrustFrameworkExtensions">
+  PublicPolicyUri="http://ebenefitsdev.onmicrosoft.com/B2C_1A_TrustFrameworkExtensions">
   
   <BasePolicy>
-    <TenantId>yourtenant.onmicrosoft.com</TenantId>
+    <TenantId>ebenefitsdev.onmicrosoft.com</TenantId>
     <PolicyId>B2C_1A_TrustFrameworkBase</PolicyId>
   </BasePolicy>
-  <BuildingBlocks>
 
-  </BuildingBlocks>
+    <BuildingBlocks>
+        <!--The claimtype city must be added to the TrustFrameworkPolicy-->
+        <!-- You can add new claims in the BASE file Section III, or in the extensions file-->
+        <ClaimsSchema>
+            <ClaimType Id="city">
+                <DisplayName>City</DisplayName>
+                <DataType>string</DataType>
+                <UserHelpText>Your city</UserHelpText>
+                <UserInputType>TextBox</UserInputType>
+            </ClaimType>
+        </ClaimsSchema>
+    </BuildingBlocks>
 
   <ClaimsProviders>
-
-
     <ClaimsProvider>
       <DisplayName>Local Account SignIn</DisplayName>
       <TechnicalProfiles>
          <TechnicalProfile Id="login-NonInteractive">
           <Metadata>
-            <Item Key="client_id">ProxyIdentityExperienceFrameworkAppId</Item>
-            <Item Key="IdTokenAudience">IdentityExperienceFrameworkAppId</Item>
+            <Item Key="client_id">35939828-c40c-4d68-9673-1d1f3a3f2ffb</Item>
+            <Item Key="IdTokenAudience">ee62d705-f625-4cd1-8fa5-9296695bf5ef</Item>
           </Metadata>
           <InputClaims>
-            <InputClaim ClaimTypeReferenceId="client_id" DefaultValue="ProxyIdentityExperienceFrameworkAppID" />
-            <InputClaim ClaimTypeReferenceId="resource_id" PartnerClaimType="resource" DefaultValue="IdentityExperienceFrameworkAppID" />
+            <InputClaim ClaimTypeReferenceId="client_id" DefaultValue="35939828-c40c-4d68-9673-1d1f3a3f2ffb" />
+            <InputClaim ClaimTypeReferenceId="resource_id" PartnerClaimType="resource" DefaultValue="ee62d705-f625-4cd1-8fa5-9296695bf5ef" />
           </InputClaims>
         </TechnicalProfile>
       </TechnicalProfiles>
     </ClaimsProvider>
 
+    <ClaimsProvider>
+        <DisplayName>REST APIs</DisplayName>
+        <TechnicalProfiles>
+            <TechnicalProfile Id="AzureFunctions-CheckPlayerTagWebHook">
+                <DisplayName>Check Player Tag Web Hook Azure Function</DisplayName>
+                <Protocol Name="Proprietary" Handler="Web.TPEngine.Providers.RestfulProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+                <Metadata>
+                    <Item Key="ServiceUrl">https://custom-b2c-policies.azurewebsites.net/api/HttpTriggerCSharp1?code=Xeu1Vv5pnlzQzabG8pa8aKRflyYFm/uLSRdlwP2dvbIhaJEi9sDOKQ==</Item>
+                    <Item Key="AuthenticationType">None</Item>
+                    <Item Key="SendClaimsIn">Body</Item>
+                </Metadata>
+                <InputClaims>
+                    <InputClaim ClaimTypeReferenceId="givenName" PartnerClaimType="playerTag" />
+                </InputClaims>
+                <UseTechnicalProfileForSessionManagement ReferenceId="SM-Noop" />
+            </TechnicalProfile>
+            <TechnicalProfile Id="SelfAsserted-ProfileUpdate">
+                <ValidationTechnicalProfiles>
+                    <ValidationTechnicalProfile ReferenceId="AzureFunctions-CheckPlayerTagWebHook" />
+                </ValidationTechnicalProfiles>
+            </TechnicalProfile>
+        </TechnicalProfiles>
+    </ClaimsProvider>
+
+    <ClaimsProvider>
+        <DisplayName>REST APIs</DisplayName>
+        <TechnicalProfiles>
+            <TechnicalProfile Id="AzureFunctions-LookUpLoyaltyWebHook">
+                <DisplayName>Check LookUpLoyalty Web Hook Azure Function</DisplayName>
+                <Protocol Name="Proprietary" Handler="Web.TPEngine.Providers.RestfulProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+                <Metadata>
+                    <Item Key="ServiceUrl">https://custom-b2c-policies.azurewebsites.net/api/LookUpLoyalty?code=8739dajT/hmvr7a3MRDX6wawMhINLFvEyDKDsneZeqmIYrPM0H1SOg==</Item>
+                    <Item Key="AuthenticationType">None</Item>
+                    <Item Key="SendClaimsIn">Body</Item>
+                </Metadata>
+                <InputClaims>
+                    <InputClaim ClaimTypeReferenceId="givenName" PartnerClaimType="email" />
+                </InputClaims>
+                <OutputClaims>
+                    <OutputClaim ClaimTypeReferenceId="city" PartnerClaimType="city" />
+                </OutputClaims>
+                <UseTechnicalProfileForSessionManagement ReferenceId="SM-Noop" />
+            </TechnicalProfile>
+        </TechnicalProfiles>
+    </ClaimsProvider>
   </ClaimsProviders>
 
-    <!--UserJourneys>
+    <UserJourneys>
 	
-	</UserJourneys-->
+        <UserJourney Id="ProfileEdit">
+            <OrchestrationSteps>
+        
+                <OrchestrationStep Order="1" Type="ClaimsProviderSelection" ContentDefinitionReferenceId="api.idpselections">
+                <ClaimsProviderSelections>
+                    <ClaimsProviderSelection TargetClaimsExchangeId="LocalAccountSigninEmailExchange" />
+                </ClaimsProviderSelections>
+                </OrchestrationStep>
+                <OrchestrationStep Order="2" Type="ClaimsExchange">
+                <ClaimsExchanges>
+                    <ClaimsExchange Id="LocalAccountSigninEmailExchange" TechnicalProfileReferenceId="SelfAsserted-LocalAccountSignin-Email" />
+                </ClaimsExchanges>
+                </OrchestrationStep>
+                <OrchestrationStep Order="3" Type="ClaimsExchange">
+                <ClaimsExchanges>
+                    <ClaimsExchange Id="AADUserReadWithObjectId" TechnicalProfileReferenceId="AAD-UserReadUsingObjectId" />
+                </ClaimsExchanges>
+                </OrchestrationStep>
+        
+                <OrchestrationStep Order="4" Type="ClaimsExchange">
+                <ClaimsExchanges>
+                    <ClaimsExchange Id="B2CUserProfileUpdateExchange" TechnicalProfileReferenceId="SelfAsserted-ProfileUpdate" />
+                </ClaimsExchanges>
+                </OrchestrationStep>
+
+                <OrchestrationStep Order="5" Type="ClaimsExchange">
+                    <ClaimsExchanges>
+                        <ClaimsExchange Id="GetLoyaltyData" TechnicalProfileReferenceId="AzureFunctions-LookUpLoyaltyWebHook" />
+                    </ClaimsExchanges>
+                </OrchestrationStep>
+
+                <OrchestrationStep Order="6" Type="SendClaims" CpimIssuerTechnicalProfileReferenceId="JwtIssuer" />
+                
+            </OrchestrationSteps>
+            <ClientDefinition ReferenceId="DefaultWeb" />
+            </UserJourney>
+
+	</UserJourneys>
 
 </TrustFrameworkPolicy>
